@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Python unit tests
+        run: python -m pytest -q
+
+      - name: End-to-end on DuckDB (3 days, incremental)
+        run: make local-run START=2026-10-05 DAYS=3
+
+      - name: dbt docs build (catches broken refs / yml)
+        working-directory: dbt
+        run: dbt docs generate --profiles-dir .
+
+  dag-parse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Airflow
+        run: |
+          pip install "apache-airflow==3.0.6" boto3 duckdb \
+            --constraint https://raw.githubusercontent.com/apache/airflow/constraints-3.0.6/constraints-3.12.txt
+      - name: DAG imports cleanly
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python -c "
+          from airflow.models.dagbag import DagBag
+          bag = DagBag('airflow/dags', include_examples=False)
+          assert not bag.import_errors, bag.import_errors
+          print('DAGs:', list(bag.dag_ids))
+          "

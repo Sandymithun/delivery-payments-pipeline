@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Files landed in object storage and copied as-is (all VARCHAR) by ingestion/load_warehouse.py
+    schema: raw
+    loaded_at_field: _loaded_at
+    config:
+      freshness:
+        warn_after: {count: 26, period: hour}
+        error_after: {count: 50, period: hour}
+    tables:
+      - name: customers
+        description: Daily full snapshot of the customer table.
+      - name: merchants
+        description: Daily full snapshot of merchants. commission_rate can change; updated_at records when.
+      - name: orders
+        description: One file per day containing that day's orders.
+        columns:
+          - name: order_id
+            data_tests: [not_null]
+      - name: payments
+        description: >
+          Payment events (failed / captured / voided / refunded). May contain exact
+          duplicates caused by payment-gateway webhook retries.
+        columns:
+          - name: payment_id
+            data_tests: [not_null]

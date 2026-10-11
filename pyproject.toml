@@ -1,0 +1,13 @@
+[project]
+name = "delivery-payments-pipeline"
+version = "1.0.0"
+description = "End-to-end ELT demo: synthetic delivery & payments data -> S3 -> Snowflake/DuckDB -> dbt star schema, orchestrated by Airflow"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"

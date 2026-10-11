@@ -1,0 +1,31 @@
+name: delivery_payments
+version: "1.0.0"
+config-version: 2
+profile: delivery_payments
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # how many days of already-loaded batches an incremental run re-processes,
+  # so late-arriving payments (e.g. refunds) still update their order
+  lookback_days: 3
+
+models:
+  delivery_payments:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+
+data_tests:
+  delivery_payments:
+    +store_failures: false

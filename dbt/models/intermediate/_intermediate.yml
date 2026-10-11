@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_order_payments
+    description: One row per order summarising its payment events.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: refunded_amount
+        data_tests: [non_negative]
+      - name: failed_attempts
+        data_tests: [non_negative]
+
+unit_tests:
+  - name: payments_roll_up_dedupes_retries_and_nets_refunds
+    description: >
+      A declined attempt then a capture then a refund nets to zero; failed attempts
+      are counted; the captured method wins.
+    model: int_order_payments
+    given:
+      - input: ref('stg_payments')
+        rows:
+          - {payment_id: p1, order_id: o1, payment_ts: "2026-10-01 12:00:00", payment_method: paypal, amount: 20.00, payment_status: failed,   batch_date: "2026-10-01"}
+          - {payment_id: p2, order_id: o1, payment_ts: "2026-10-01 12:01:00", payment_method: card,   amount: 20.00, payment_status: captured, batch_date: "2026-10-01"}
+          - {payment_id: p3, order_id: o1, payment_ts: "2026-10-01 15:00:00", payment_method: card,   amount: -20.00, payment_status: refunded, batch_date: "2026-10-02"}
+          - {payment_id: p4, order_id: o2, payment_ts: "2026-10-01 18:00:00", payment_method: card,   amount: 9.50,  payment_status: voided,   batch_date: "2026-10-01"}
+    expect:
+      rows:
+        - {order_id: o1, captured_amount: 20.00, refunded_amount: 20.00, net_paid_amount: 0.00, failed_attempts: 1, payment_method: card, last_payment_batch_date: "2026-10-02"}
+        - {order_id: o2, captured_amount: 0.00,  refunded_amount: 0.00,  net_paid_amount: 0.00, failed_attempts: 0, payment_method: card, last_payment_batch_date: "2026-10-01"}

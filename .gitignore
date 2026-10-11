@@ -1,0 +1,22 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# generated data & local warehouse
+data/
+warehouse/*.duckdb
+warehouse/*.duckdb.wal
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
+
+# spark
+spark-warehouse/
+metastore_db/
+derby.log

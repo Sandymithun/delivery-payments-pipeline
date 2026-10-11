@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Latest version of each customer; e-mails trimmed and lower-cased.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: email
+        data_tests:
+          - not_null
+          - unique
+          - is_clean_email
+
+  - name: stg_merchants
+    description: Merchant versions (one row per merchant per distinct updated_at).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [merchant_id, updated_at]
+    columns:
+      - name: merchant_id
+        data_tests: [not_null]
+      - name: commission_rate
+        data_tests:
+          - not_null
+          - in_range:
+              arguments: {min_value: 0, max_value: 0.5}
+
+  - name: stg_orders
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [delivered, cancelled, refunded]
+      - name: currency
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [EUR]
+
+  - name: stg_payments
+    description: Payment events with gateway-retry duplicates removed.
+    columns:
+      - name: payment_id
+        data_tests: [unique, not_null]
+      - name: order_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_orders')
+                field: order_id
+      - name: payment_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [captured, failed, voided, refunded]
+      - name: payment_method
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [card, apple_pay, google_pay, paypal]

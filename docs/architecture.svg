@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 640" font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrowO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/>
+    </marker>
+    <style>
+      .title { font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .lbl   { font-size: 12.5px; fill: #334155; }
+      .small { font-size: 11px; fill: #64748b; }
+      .mono  { font-size: 11px; fill: #334155; font-family: "JetBrains Mono", Menlo, Consolas, monospace; }
+      .zone  { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: #64748b; }
+      .flow  { stroke: #475569; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .orch  { stroke: #c2410c; stroke-width: 1.3; stroke-dasharray: 5 4; fill: none; marker-end: url(#arrowO); }
+    </style>
+  </defs>
+
+  <rect width="1180" height="640" fill="#ffffff"/>
+
+  <!-- ===================== Airflow band ===================== -->
+  <rect x="20" y="16" width="1140" height="78" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="38" y="40" class="title">Apache Airflow 3 · DAG delivery_payments_daily</text>
+  <text x="38" y="58" class="small">Docker Compose · LocalExecutor + Postgres · daily 02:00 Europe/Dublin · catchup/backfill · max_active_runs=1 · retries=2</text>
+  <g class="mono">
+    <text x="38" y="81">generate_raw → land_in_storage → load_to_warehouse → dbt_source_freshness → dbt_build_staging → dbt_build_marts ⇒ Asset(fact_orders)</text>
+  </g>
+
+  <!-- zone labels -->
+  <text x="40" y="128" class="zone">SOURCES</text>
+  <text x="300" y="128" class="zone">LANDING · OBJECT STORAGE</text>
+  <text x="590" y="128" class="zone">SNOWFLAKE / DUCKDB</text>
+
+  <!-- ===================== Sources ===================== -->
+  <rect x="30" y="140" width="220" height="150" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="46" y="164" class="title">Batch extract</text>
+  <text x="46" y="184" class="lbl">generator/generate_data.py</text>
+  <text x="46" y="206" class="mono">customers.csv  (snapshot)</text>
+  <text x="46" y="222" class="mono">merchants.csv  (snapshot)</text>
+  <text x="46" y="238" class="mono">orders.csv     (daily)</text>
+  <text x="46" y="254" class="mono">payments.csv   (events)</text>
+  <text x="46" y="276" class="small">deterministic · dirty on purpose</text>
+
+  <rect x="30" y="320" width="220" height="112" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="46" y="344" class="title">Streaming (optional)</text>
+  <text x="46" y="364" class="lbl">streaming/producer.py</text>
+  <text x="46" y="384" class="mono">order_placed → payment_*</text>
+  <text x="46" y="400" class="mono">→ order_delivered</text>
+  <text x="46" y="420" class="small">keyed by order_id · acks=all</text>
+
+  <rect x="30" y="462" width="220" height="112" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="46" y="486" class="title">Large file (optional)</text>
+  <text x="46" y="506" class="lbl">spark/process_large_orders.py</text>
+  <text x="46" y="526" class="mono">5M+ orders CSV → PySpark</text>
+  <text x="46" y="542" class="mono">dedupe · broadcast join</text>
+  <text x="46" y="562" class="small">→ Parquet by order_date</text>
+
+  <!-- ===================== Kafka ===================== -->
+  <rect x="300" y="336" width="230" height="80" rx="10" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="316" y="360" class="title">Apache Kafka (KRaft)</text>
+  <text x="316" y="380" class="mono">topic: order-events · 3 partitions</text>
+  <text x="316" y="400" class="small">commit after write · at-least-once</text>
+
+  <!-- ===================== Lake ===================== -->
+  <rect x="300" y="140" width="230" height="160" rx="10" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="316" y="164" class="title">S3 / Azure Blob</text>
+  <text x="316" y="182" class="small">MinIO stands in for S3 locally</text>
+  <text x="316" y="206" class="mono">raw/&lt;entity&gt;/dt=YYYY-MM-DD/</text>
+  <text x="316" y="222" class="mono">  &lt;entity&gt;.csv</text>
+  <text x="316" y="242" class="mono">raw/order_events/dt=…/</text>
+  <text x="316" y="258" class="mono">  part-*.jsonl</text>
+  <text x="316" y="282" class="small">Hive partitions · idempotent</text>
+
+  <!-- ===================== Warehouse ===================== -->
+  <rect x="580" y="140" width="580" height="434" rx="12" fill="#f0fdf4" stroke="#86efac"/>
+
+  <rect x="600" y="160" width="160" height="138" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+  <text x="614" y="182" class="title">RAW</text>
+  <text x="614" y="200" class="small">COPY INTO from stage</text>
+  <text x="614" y="222" class="mono">customers</text>
+  <text x="614" y="238" class="mono">merchants</text>
+  <text x="614" y="254" class="mono">orders</text>
+  <text x="614" y="270" class="mono">payments</text>
+  <text x="614" y="288" class="small">VARCHAR + _batch_date</text>
+
+  <rect x="780" y="160" width="170" height="138" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+  <text x="794" y="182" class="title">dbt staging</text>
+  <text x="794" y="200" class="small">views · cast · clean · dedupe</text>
+  <text x="794" y="222" class="mono">stg_customers</text>
+  <text x="794" y="238" class="mono">stg_merchants</text>
+  <text x="794" y="254" class="mono">stg_orders</text>
+  <text x="794" y="270" class="mono">stg_payments</text>
+  <text x="794" y="288" class="mono">int_order_payments</text>
+
+  <rect x="970" y="160" width="170" height="138" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+  <text x="984" y="182" class="title">dbt tests</text>
+  <text x="984" y="200" class="small">gate every layer</text>
+  <text x="984" y="222" class="lbl">unique · not_null</text>
+  <text x="984" y="238" class="lbl">relationships · values</text>
+  <text x="984" y="254" class="lbl">custom generic tests</text>
+  <text x="984" y="270" class="lbl">reconciliation · SCD2</text>
+  <text x="984" y="288" class="lbl">unit test · freshness</text>
+
+  <!-- star schema -->
+  <text x="600" y="330" class="zone">MARTS · STAR SCHEMA</text>
+  <rect x="772" y="410" width="196" height="66" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="870" y="436" class="title" text-anchor="middle">fact_orders</text>
+  <text x="870" y="454" class="small" text-anchor="middle">incremental · 1 row / order</text>
+  <text x="870" y="468" class="small" text-anchor="middle">GMV · payments · commission</text>
+
+  <rect x="610" y="346" width="150" height="54" rx="8" fill="#ffffff" stroke="#16a34a"/>
+  <text x="685" y="370" class="title" text-anchor="middle">dim_customer</text>
+  <text x="685" y="388" class="small" text-anchor="middle">SCD type 1</text>
+
+  <rect x="980" y="346" width="160" height="54" rx="8" fill="#ffffff" stroke="#16a34a"/>
+  <text x="1060" y="370" class="title" text-anchor="middle">dim_merchant</text>
+  <text x="1060" y="388" class="small" text-anchor="middle">SCD type 2 · valid_from/to</text>
+
+  <rect x="610" y="494" width="150" height="54" rx="8" fill="#ffffff" stroke="#16a34a"/>
+  <text x="685" y="518" class="title" text-anchor="middle">dim_date</text>
+  <text x="685" y="536" class="small" text-anchor="middle">date_key YYYYMMDD</text>
+
+  <rect x="980" y="494" width="160" height="54" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+  <text x="1060" y="518" class="title" text-anchor="middle">Spark aggregate</text>
+  <text x="1060" y="536" class="small" text-anchor="middle">merchant_daily (optional)</text>
+
+  <!-- star joins -->
+  <line x1="760" y1="380" x2="772" y2="425" stroke="#16a34a" stroke-width="1.5"/>
+  <line x1="980" y1="380" x2="968" y2="425" stroke="#16a34a" stroke-width="1.5"/>
+  <line x1="760" y1="515" x2="772" y2="465" stroke="#16a34a" stroke-width="1.5"/>
+
+  <!-- ===================== flows ===================== -->
+  <path class="flow" d="M250,215 L298,215"/>
+  <path class="flow" d="M250,376 L298,376"/>
+  <path class="flow" d="M415,336 L415,302"/>
+  <path class="flow" d="M530,222 L598,222"/>
+  <path class="flow" d="M760,229 L778,229"/>
+  <path class="flow" d="M950,229 L968,229"/>
+  <path class="flow" d="M865,298 L865,408"/>
+  <path class="flow" d="M250,540 C560,600 860,600 1058,550"/>
+
+  <!-- orchestration -->
+  <path class="orch" d="M140,94 L140,138"/>
+  <path class="orch" d="M510,94 L510,138"/>
+  <path class="orch" d="M740,94 L740,158"/>
+  <path class="orch" d="M865,94 L865,158"/>
+
+  <!-- footer -->
+  <rect x="20" y="596" width="1140" height="32" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="38" y="617" class="lbl">GitHub Actions CI: pytest · 3-day incremental dbt build on DuckDB · Airflow DAG import check</text>
+  <text x="1142" y="617" class="small" text-anchor="end">— data flow    - - orchestration</text>
+</svg>
